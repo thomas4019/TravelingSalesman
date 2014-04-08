@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
+using System.Security.Cryptography;
 
 namespace TSP
 {
@@ -74,6 +75,8 @@ namespace TSP
         private Brush cityBrushStartStyle;
         private Brush cityBrushStyle;
         private Pen routePenStyle;
+
+        static Random rng = new Random();
 
 
         /// <summary>
@@ -249,6 +252,36 @@ namespace TSP
             return s;
         }
 
+        public static void Shuffle(IList list)
+        { 
+            int n = list.Count;
+            while (n > 1)
+            {
+                n--;
+                int k = rng.Next(n + 1);
+                Object value = list[k];
+                list[k] = list[n];
+                list[n] = value;
+            }
+        }
+
+        public static void Shuffle2(IList list)  
+        {  
+            var provider = new RNGCryptoServiceProvider();  
+            int n = list.Count;  
+            while (n > 1)  
+            {  
+                var box = new byte[1];  
+                do provider.GetBytes(box);  
+                while (!(box[0] < n * (Byte.MaxValue / n)));  
+                var k = (box[0] % n);  
+                n--;  
+                var value = list[k];  
+                list[k] = list[n];  
+                list[n] = value;  
+            }  
+        }
+
         private TSPSolution random()
         {
             int x;
@@ -257,6 +290,7 @@ namespace TSP
             {
                 Route.Add(Cities[Cities.Length - x - 1]);
             }
+            Shuffle(Route);
             TSPSolution s = new TSPSolution(Route);
             return s;
         }
@@ -289,7 +323,25 @@ namespace TSP
             TSPSolution s = new TSPSolution(Route);
             bssf = s;*/
 
-            bssf = random();
+            double best = double.MaxValue;
+            double worst = 0;
+
+            for (int i = 0; i < 1000000; i++)
+            {
+                TSPSolution current = random();
+                double cost = current.costOfRoute();
+                if (cost < best)
+                {
+                    bssf = current;
+                    best = cost;
+                }
+                else if (cost > worst)
+                {
+                    worst = cost;
+                }
+            }
+
+            Console.WriteLine(best + " " + worst);
 
             // update the cost of the tour. 
             Program.MainForm.tbCostOfTour.Text = " " + bssf.costOfRoute();
