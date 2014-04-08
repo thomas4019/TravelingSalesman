@@ -292,6 +292,42 @@ namespace TSP
             }
             Shuffle(Route);
             TSPSolution s = new TSPSolution(Route);
+            //Console.WriteLine(s.costOfRoute() + " shuffle");
+            return s;
+        }
+
+        /// <summary>
+        /// Runs TwoChange on a random route
+        /// </summary>
+        /// <returns>The best solution for choose 2</returns>
+        private TSPSolution TwoChange()
+        {
+            TSPSolution s = random();
+            double cost = s.costOfRoute();
+            ArrayList Route = s.Route;
+
+            for (int first = 0; first < Route.Count - 1; ++first)
+            {
+                for (int last = first + 1; last < Route.Count; ++last)
+                {
+                    City firstCity = Route[first] as City;
+                    City lastCity = Route[last] as City;
+                    Route[first] = lastCity;
+                    Route[last] = firstCity;
+
+                    double newCost = s.costOfRoute();
+                    if (newCost < cost)
+                    {
+                        cost = newCost;
+                    }
+                    else
+                    {
+                        Route[first] = firstCity;
+                        Route[last] = lastCity;
+                    }
+                }
+            }
+            //Console.WriteLine(cost + " twoChange");
             return s;
         }
 
@@ -326,9 +362,11 @@ namespace TSP
             double best = double.MaxValue;
             double worst = 0;
 
-            for (int i = 0; i < 1000000; i++)
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+            for (int i = 0; i < 1000; i++)
             {
-                TSPSolution current = random();
+                TSPSolution current = TwoChange();
                 double cost = current.costOfRoute();
                 if (cost < best)
                 {
@@ -340,6 +378,8 @@ namespace TSP
                     worst = cost;
                 }
             }
+            sw.Stop();
+            Console.WriteLine(sw.ElapsedMilliseconds);
 
             Console.WriteLine(best + " " + worst);
 
