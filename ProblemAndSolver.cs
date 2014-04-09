@@ -351,6 +351,21 @@ namespace TSP
             return null;
         }
 
+        private BBState CreateInitialState()
+        {
+            City[] cities = this.GetCities();
+            double[,] costMatrix = new double[cities.Length, cities.Length];
+            for (int x = 0; x < cities.Length; ++x)
+            {
+                for (int y = 0; y < cities.Length; ++y)
+                {
+                    costMatrix[x, y] = x == y ? double.PositiveInfinity : cities[x].costToGetTo(cities[y]);
+                }
+            }
+
+            return new BBState(costMatrix);
+        }
+
         /// <summary>
         ///  solve the problem.  This is the entry point for the solver when the run button is clicked
         /// right now it just picks a simple solution. 
@@ -366,7 +381,7 @@ namespace TSP
 
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 100; i++)
             {
                 TSPSolution current = TwoChange();
                 double cost = current.costOfRoute();
@@ -380,6 +395,13 @@ namespace TSP
                     worst = cost;
                 }
             }
+
+            BBWorker worker = new BBWorker(CreateInitialState(), Cities.Length);
+            worker.setBSSF(best);
+            worker.run();
+            BBState BSSFState = worker.GetBSSFState();
+            bssf = new TSPSolution(BSSFState.getRoute(this.GetCities()));
+
             sw.Stop();
             Console.WriteLine(sw.ElapsedMilliseconds);
 
