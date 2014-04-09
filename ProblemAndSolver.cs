@@ -327,7 +327,7 @@ namespace TSP
                     }
                 }
             }
-            //Console.WriteLine(cost + " twoChange");
+
             return s;
         }
 
