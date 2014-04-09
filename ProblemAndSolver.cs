@@ -107,6 +107,8 @@ namespace TSP
         }
         #endregion
 
+        BBWorker a;
+
         public const int DEFAULT_SEED = -1;
 
         #region Constructors
