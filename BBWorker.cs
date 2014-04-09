@@ -10,14 +10,16 @@ namespace TSP
         C5.IntervalHeap<BBState> Agenda;
         double initial_bound;
         double BSSF_cost;
+        int numPoints;
         bool timeAvailable;
 
         public BBWorker()
         {
             Agenda = new C5.IntervalHeap<BBState>();
             BSSF_cost = double.MaxValue;
+            numPoints = 5;
 
-            BBState initial = new BBState(5);
+            BBState initial = new BBState(numPoints);
             initial_bound = initial.bound;
             Agenda.Add(initial);
             timeAvailable = true;
@@ -57,6 +59,7 @@ namespace TSP
 
         bool criterion(BBState w)
         {
+            if (w.depth == 
  	        throw new NotImplementedException();
         }
     }
@@ -100,13 +103,20 @@ namespace TSP
             return (int)(getPriority() - ((BBState)obj).getPriority());
         }
     
-        void chooseNextEdge(out int x,out int y)
+        public void chooseNextEdge(out int chosenX,out int chosenY)
         {
  	        for (int x = 0; x < numPoints; x++) {
                 for (int y = 0; y < numPoints; y++) {
-
+                    if (cost[x, y] != 0)
+                    {
+                        chosenX = x;
+                        chosenY = y;
+                        return;
+                    }
                 }
             }
+
+            chosenX = chosenY = 0;
         }
     }
 
