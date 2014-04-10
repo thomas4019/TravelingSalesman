@@ -381,7 +381,7 @@ namespace TSP
 
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 TSPSolution current = TwoChange();
                 double cost = current.costOfRoute();

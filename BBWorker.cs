@@ -96,7 +96,7 @@ namespace TSP
 
     class BBState : IComparable
     {
-        private static double lambda = .0005;
+        private static double lambda = .0000005;
 
         private double[,] cost;
 
