@@ -379,6 +379,10 @@ namespace TSP
             double best = double.MaxValue;
             double worst = 0;
 
+            BBWorker.timer.Elapsed += new System.Timers.ElapsedEventHandler(BBWorker.onTimedEvent);
+            if (!BBWorker.timer.Enabled)
+                BBWorker.timer.Enabled = true;
+
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
             for (int i = 0; i < 1000; i++)

@@ -3,19 +3,21 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Timers;
 
 namespace TSP
 {
     class BBWorker
     {
-        private static int MaxAgendaCount = 200000;
+        public static Timer timer = new Timer(60000);
+
         C5.IntervalHeap<BBState> Agenda;
         double initial_bound;
         static double BSSF_cost;
         double[,] trueCosts;
         static BBState BSSF;
         int numPoints;
-        bool timeAvailable;
+        static bool timeAvailable;
 
         public BBWorker(BBState initial, double[,] trueCosts, int numPoints)
         {
@@ -31,6 +33,7 @@ namespace TSP
 
         public void run()
         {
+            
             while(!Agenda.IsEmpty && timeAvailable && BSSF_cost != initial_bound) {
 
                 BBState u = Agenda.DeleteMin();
@@ -50,6 +53,8 @@ namespace TSP
                     expand(exclude);
                     expand(include);
                 }
+
+                GC.KeepAlive(timer);
 
                 if (!timeAvailable)
                     break;
@@ -89,6 +94,12 @@ namespace TSP
                 return false;
             }
             return w.validateCycle();
+        }
+
+        public static void onTimedEvent(Object source, ElapsedEventArgs e)
+        {
+            BBWorker.timeAvailable = false;
+            Console.WriteLine("The Elapsed event was raised at {0}", e.SignalTime);
         }
 
         
