@@ -3,24 +3,43 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Timers;
 
 namespace TSP
 {
     class BBWorker
     {
-        public static Timer timer = new Timer(60000);
+        public static System.Timers.Timer timer = new System.Timers.Timer(60000);
+
+        public static int MaxWorkerCount = 4;
+        public static int MinAgendaSplitSize = 50;
+
+        public static int workerCount = 0;
+
+        private static int MaxAgendaCount = 200000;
 
         C5.IntervalHeap<BBState> Agenda;
-        double initial_bound;
-        static double BSSF_cost;
+        static double initial_bound;
         double[,] trueCosts;
-        static BBState BSSF;
         int numPoints;
+
+        static double BSSF_cost;
+        static BBState BSSF;
         static bool timeAvailable;
+        BBState initial;
+
+        static int invalidSolutionsCount;
+        static int failedCount;
+        static int expansions;
+        static int pruned;
+        static int prunedChild;
 
         public BBWorker(BBState initial, double[,] trueCosts, int numPoints)
         {
+            workerCount++;
+            this.initial = initial;
+
             Agenda = new C5.IntervalHeap<BBState>();
             BSSF_cost = double.PositiveInfinity;
             this.trueCosts = trueCosts;
@@ -31,18 +50,35 @@ namespace TSP
             timeAvailable = true;
         }
 
+        public BBWorker(double[,] trueCosts, int numPoints)
+        {
+            workerCount++;
+
+            this.trueCosts = trueCosts;
+            this.numPoints = numPoints;
+        }
+
+        public void setAgenda(C5.IntervalHeap<BBState> Agenda)
+        {
+            this.Agenda = Agenda;
+        }
+
         public void run()
         {
-            
             while(!Agenda.IsEmpty && timeAvailable && BSSF_cost != initial_bound) {
 
                 BBState u = Agenda.DeleteMin();
                 //Console.WriteLine(u.bound);
+
+                //Pruning
                 if (u.bound > BSSF_cost)
+                {
+                    pruned++;
                     continue;
+                }
 
                 int x,y;
-                if ( u.chooseNextEdge(out x, out y) )
+                if (u.chooseNextEdge(out x, out y))
                 {
                     BBState exclude = u;
                     BBState include = new BBState(u);
@@ -52,13 +88,23 @@ namespace TSP
 
                     expand(exclude);
                     expand(include);
+                    expansions++;
+                }
+                else
+                {
+                    failedCount++;
+                    if (failedCount % 100 == 0)
+                        Console.WriteLine("failed " + failedCount);
                 }
 
                 GC.KeepAlive(timer);
+                splitCheck();
 
                 if (!timeAvailable)
                     break;
             }
+
+            workerCount--;
         }
 
         public BBState GetBSSFState()
@@ -72,18 +118,32 @@ namespace TSP
         }
 
         private void expand(BBState w) {
-
             if (w.bound < BSSF_cost || BSSF == null) // See if bound is within cost
             {
-                if(criterion(w)) { // If full solution
+                if (criterion(w))
+                { // If full solution
                     BSSF = w;
                     BSSF_cost = BSSF.bound;
                     Console.WriteLine("Found solution with cost " + BSSF.bound + " depth=" + BSSF.depth);
                 }
-                else { // Otherwise add to agenda
+                else if (w.depth < numPoints)
+                { // Otherwise add to agenda
                     //Console.WriteLine(w.bound);
                     Agenda.Add(w);
                 }
+                else
+                {
+                    invalidSolutionsCount++;
+
+                    //if (triedCount % 50 == 0)
+                    //{
+                    Console.WriteLine("Failed Solution " + invalidSolutionsCount);
+                    //}
+                }
+            }
+            else
+            {
+                prunedChild++;
             }
         }
 
@@ -96,6 +156,41 @@ namespace TSP
             return w.validateCycle();
         }
 
+
+        public void splitCheck()
+        {
+            //Console.WriteLine(Agenda.Count);
+            if (workerCount < MaxWorkerCount && Agenda.Count > MinAgendaSplitSize)
+            {
+                Console.WriteLine("Splitting Agenda cost=" + BSSF_cost + " size=" + Agenda.Count);
+                C5.IntervalHeap<BBState> a = new C5.IntervalHeap<BBState>();
+                C5.IntervalHeap<BBState> b = new C5.IntervalHeap<BBState>();
+
+                //Split agenda into two
+                int counter = 0;
+                foreach (BBState s in Agenda)
+                {
+                    if (counter++ % 2 == 0)
+                    {
+                        a.Add(s);
+                    }
+                    else
+                    {
+                        b.Add(s);
+                    }
+                }
+
+                BBWorker child = new BBWorker(trueCosts, numPoints);
+                child.setAgenda(b);
+                setAgenda(a);
+
+                Thread nThread = new Thread(new ThreadStart(child.run));
+                nThread.Start();
+            }
+
+        }
+
+
         public static void onTimedEvent(Object source, ElapsedEventArgs e)
         {
             BBWorker.timeAvailable = false;
@@ -107,7 +202,7 @@ namespace TSP
 
     class BBState : IComparable
     {
-        private static double lambda = .0000005;
+        private static double lambda = .0005;
 
         private double[,] cost;
 
@@ -118,6 +213,7 @@ namespace TSP
 
         public int numPoints;
 
+        List<Tuple<int, int>> segments;
 
         public BBState(int numPoints)
             : this(new double[numPoints, numPoints])
@@ -128,6 +224,7 @@ namespace TSP
         {
             this.cost = cost;
             this.numPoints = cost.GetLength(1);
+            this.segments = new List<Tuple<int, int>>();
         }
 
         /// Copy Constructor
@@ -138,6 +235,7 @@ namespace TSP
             this.numPoints = other.numPoints;
             this.depth = other.depth;
             this.bound = other.bound;
+            this.segments = other.segments.ToList(); //deep clone is not necessary since we don't modify the tuples
         }
 
         /// <summary>
@@ -164,11 +262,37 @@ namespace TSP
         /// </summary>
         /// <param name="chosenX"></param>
         /// <param name="chosenY"></param>
-        public bool chooseNextEdge(out int chosenX, out int chosenY)
+        public bool chooseNextEdgeOld(out int chosenX, out int chosenY)
         {
             for (int y = 0; y < numPoints; y++) {
- 	            for (int x = (depth == (numPoints - 1)) ? 0 : 1; x < numPoints; x++) {
+ 	            for (int x = (depth >= 1) ? 0 : 1; x < numPoints; x++) {
                     if (!double.IsNaN(cost[x, y]) && !double.IsPositiveInfinity(cost[x,y]) )
+                    {
+                        chosenX = x;
+                        chosenY = y;
+                        return true;
+                    }
+                }
+            }
+            chosenX = chosenY = 0;
+            return false;
+        }
+
+        public bool chooseNextEdge(out int chosenX, out int chosenY)
+        {
+            double min = double.MaxValue;
+            for (int y = 0; y < numPoints; y++)
+                for (int x = (depth >= 1) ? 0 : 1; x < numPoints; x++)
+                    if (cost[x, y] < min)
+                    {
+                        min = cost[x, y];
+                    }
+
+            for (int y = 0; y < numPoints; y++)
+            {
+                for (int x = (depth >= 1) ? 0 : 1; x < numPoints; x++)
+                {
+                    if (min == cost[x, y])
                     {
                         chosenX = x;
                         chosenY = y;
@@ -211,7 +335,38 @@ namespace TSP
             }
             cost[x, y] = double.NaN;
             cost[y, x] = double.PositiveInfinity;
+
+
             ++depth;
+
+            //prevent cycles unless this is one edge away
+            if (depth < numPoints - 1)
+            {
+                int segmentX = x;
+                int segmentY = y;
+                for (int i = segments.Count - 1; i >= 0; i--)
+                {
+                    Tuple<int, int> edge = segments[i];
+                    if (edge.Item2 == segmentX)
+                    {
+                        segments.RemoveAt(i);
+                        segmentX = edge.Item1;
+                    }
+                    else if (edge.Item1 == segmentY)
+                    {
+                        segments.RemoveAt(i);
+                        segmentY = edge.Item2;
+                    }
+                }
+                segments.Add(new Tuple<int, int>(segmentX, segmentY));
+                if (cost[segmentY, segmentX] != double.NaN)
+                    cost[segmentY, segmentX] = double.PositiveInfinity;
+            }
+            else
+            {
+                int a = 1;
+            }
+
             reduce();
         }
 
@@ -300,14 +455,17 @@ namespace TSP
             bool[] visited = new bool[numPoints];
             for (int i = 0; i < numPoints; ++i)
             {
+                Console.WriteLine(row);
                 for (int x = 0; x < numPoints; ++x)
                 {
                     if (Double.IsNaN(cost[x, row]))
                     {
                         if (visited[x])
+                        {
+                            Console.WriteLine(x + " cannot be used twice");
                             return false;
+                        }
 
-                        
                         visited[x] = true;
                         row = x;
                         break;

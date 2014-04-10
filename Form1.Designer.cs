@@ -110,7 +110,6 @@ namespace TSP
             // btnRun
             // 
             this.btnRun.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.btnRun.Image = global::TravelingSalesman.Properties.Resources.smiley_face_wallpaper_widescreen_001;
             this.btnRun.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnRun.Name = "btnRun";
             this.btnRun.Size = new System.Drawing.Size(38, 24);

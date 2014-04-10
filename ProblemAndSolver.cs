@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
 using System.Security.Cryptography;
+using System.Threading;
 
 namespace TSP
 {
@@ -50,7 +51,7 @@ namespace TSP
                 return cost; 
             }
         }
-
+        
         #region private members
         private const int DEFAULT_SIZE = 25;
         
@@ -298,7 +299,7 @@ namespace TSP
             return s;
         }
 
-        /// <summary>
+        /// <summary>s
         /// Runs TwoChange on a random route
         /// </summary>
         /// <returns>The best solution for choose 2</returns>
@@ -403,10 +404,19 @@ namespace TSP
             BBState initialState = CreateInitialState();
             BBWorker worker = new BBWorker(initialState, initialState.getCostMatrix(), Cities.Length);
             worker.setBSSF(best);
-            worker.run();
+            //worker.run();
+            Thread nThread = new Thread(new ThreadStart(worker.run));
+            nThread.Start();
+            while  (BBWorker.workerCount > 0)
+            {
+                Thread.Sleep(1000);
+            }
             BBState BSSFState = worker.GetBSSFState();
             bssf = new TSPSolution(BSSFState.getRoute(this.GetCities()));
-
+            if (bssf.Route.Count != Cities.Length)
+            {
+                throw new Exception();
+            }
             sw.Stop();
             Console.WriteLine(sw.ElapsedMilliseconds);
 
@@ -414,6 +424,7 @@ namespace TSP
 
             // update the cost of the tour. 
             Program.MainForm.tbCostOfTour.Text = " " + bssf.costOfRoute();
+            Program.MainForm.tbElapsedTime.Text = " " + sw.Elapsed;
             // do a refresh. 
             Program.MainForm.Invalidate();
         }
