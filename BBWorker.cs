@@ -10,8 +10,6 @@ namespace TSP
 {
     class BBWorker
     {
-        public static System.Timers.Timer timer = new System.Timers.Timer(60000);
-
         public static int MaxWorkerCount = 4;
         public static int MinAgendaSplitSize = 50;
 
@@ -19,24 +17,31 @@ namespace TSP
 
         private static int MaxAgendaCount = 200000;
 
+        public delegate void UpdateAction(bool done);
+        public static UpdateAction updateGUI;
+
         C5.IntervalHeap<BBState> Agenda;
         static double initial_bound;
         double[,] trueCosts;
         int numPoints;
 
         static double BSSF_cost;
-        static BBState BSSF;
-        static bool timeAvailable;
+        public static BBState BSSF;
+        public static bool timeAvailable;
         BBState initial;
 
-        static int invalidSolutionsCount;
-        static int failedCount;
-        static int expansions;
-        static int pruned;
-        static int prunedChild;
+        public static int invalidSolutionsCount;
+        public static int failedCount;
+        public static int expansions;
+        public static int pruned;
+        public static int prunedChild;
+        public static int maxAgenda;
 
         public BBWorker(BBState initial, double[,] trueCosts, int numPoints)
         {
+            invalidSolutionsCount = failedCount = expansions = pruned = prunedChild = maxAgenda = 0;
+            workerCount = 0;
+
             workerCount++;
             this.initial = initial;
 
@@ -88,7 +93,8 @@ namespace TSP
 
                     expand(exclude);
                     expand(include);
-                    expansions++;
+                    //expansions++;
+                    Interlocked.Increment(ref expansions);
                 }
                 else
                 {
@@ -97,14 +103,20 @@ namespace TSP
                         Console.WriteLine("failed " + failedCount);
                 }
 
-                GC.KeepAlive(timer);
                 splitCheck();
 
                 if (!timeAvailable)
                     break;
             }
 
+            Console.WriteLine(Agenda.Count + " on agenda when ending");
+
             workerCount--;
+
+            if (workerCount == 0)
+            {
+                updateGUI(true);
+            }
         }
 
         public BBState GetBSSFState()
@@ -124,6 +136,7 @@ namespace TSP
                 { // If full solution
                     BSSF = w;
                     BSSF_cost = BSSF.bound;
+                    updateGUI(false);
                     Console.WriteLine("Found solution with cost " + BSSF.bound + " depth=" + BSSF.depth);
                 }
                 else if (w.depth < numPoints)
@@ -159,6 +172,11 @@ namespace TSP
 
         public void splitCheck()
         {
+            if (Agenda.Count > maxAgenda)
+            {
+                maxAgenda = Agenda.Count;
+            }
+
             //Console.WriteLine(Agenda.Count);
             if (workerCount < MaxWorkerCount && Agenda.Count > MinAgendaSplitSize)
             {
@@ -189,15 +207,6 @@ namespace TSP
             }
 
         }
-
-
-        public static void onTimedEvent(Object source, ElapsedEventArgs e)
-        {
-            BBWorker.timeAvailable = false;
-            Console.WriteLine("The Elapsed event was raised at {0}", e.SignalTime);
-        }
-
-        
     }
 
     class BBState : IComparable
@@ -362,10 +371,6 @@ namespace TSP
                 if (cost[segmentY, segmentX] != double.NaN)
                     cost[segmentY, segmentX] = double.PositiveInfinity;
             }
-            else
-            {
-                int a = 1;
-            }
 
             reduce();
         }
@@ -455,7 +460,6 @@ namespace TSP
             bool[] visited = new bool[numPoints];
             for (int i = 0; i < numPoints; ++i)
             {
-                Console.WriteLine(row);
                 for (int x = 0; x < numPoints; ++x)
                 {
                     if (Double.IsNaN(cost[x, row]))

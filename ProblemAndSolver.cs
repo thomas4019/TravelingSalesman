@@ -5,12 +5,15 @@ using System.Text;
 using System.Drawing;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Timers;
 
 namespace TSP
 {
     class ProblemAndSolver
     {
-        private class TSPSolution
+        public static Boolean LiveUpdating = true;
+
+        public class TSPSolution
         {
             /// <summary>
             /// we use the representation [cityB,cityA,cityC] 
@@ -107,8 +110,6 @@ namespace TSP
             get { return _seed; }
         }
         #endregion
-
-        BBWorker a;
 
         public const int DEFAULT_SEED = -1;
 
@@ -367,6 +368,60 @@ namespace TSP
             return new BBState(costMatrix);
         }
 
+        delegate void UpdateAction();
+
+        private void onTimedEvent(Object source, ElapsedEventArgs e)
+        {
+            BBWorker.timeAvailable = false;
+            Console.WriteLine("-----------");
+            Console.WriteLine("The Elapsed event was raised at {0}", e.SignalTime);
+            UpdateAction done = showDone;
+            Program.MainForm.Invoke(done);
+        }
+
+        public void showDone() {
+            Program.MainForm.tbElapsedTime.Text = sw.Elapsed + " done";
+        }
+
+        public void newSolutionCallback(bool done)
+        {
+            if (LiveUpdating || done)
+                updateHUD();
+            if (done)
+            {
+                UpdateAction doneHandler = showDone;
+                Program.MainForm.Invoke(doneHandler);
+            }
+        }
+
+        public void updateHUD()
+        {
+            BBState BSSFState = BBWorker.BSSF;
+            bssf = new TSPSolution(BSSFState.getRoute(GetCities()));
+            if (bssf.Route.Count != Cities.Length)
+            {
+                throw new Exception();
+            }
+            UpdateAction action = updateHUDHandler;
+            Program.MainForm.Invoke(action);
+        }
+
+        public void updateHUDHandler()
+        {
+            // update the cost of the tour. 
+            Program.MainForm.tbCostOfTour.Text = " " + bssf.costOfRoute();
+            Program.MainForm.tbElapsedTime.Text = " " + sw.Elapsed;
+
+            Program.MainForm.tbSearched.Text = "" + BBWorker.expansions;
+            Program.MainForm.tbPruned.Text = "" + BBWorker.pruned;
+            Program.MainForm.tbMaxAgenda.Text = "" + BBWorker.maxAgenda;
+
+            // do a refresh. 
+            Program.MainForm.Invalidate();
+        }
+
+        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+
         /// <summary>
         ///  solve the problem.  This is the entry point for the solver when the run button is clicked
         /// right now it just picks a simple solution. 
@@ -380,13 +435,14 @@ namespace TSP
             double best = double.MaxValue;
             double worst = 0;
 
-            BBWorker.timer.Elapsed += new System.Timers.ElapsedEventHandler(BBWorker.onTimedEvent);
-            if (!BBWorker.timer.Enabled)
-                BBWorker.timer.Enabled = true;
+            System.Timers.Timer timer = new System.Timers.Timer(60000);
+            timer.AutoReset = false;
+            timer.Elapsed += new System.Timers.ElapsedEventHandler(this.onTimedEvent);
+            timer.Enabled = true;
 
-            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Reset();
             sw.Start();
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 100; i++)
             {
                 TSPSolution current = TwoChange();
                 double cost = current.costOfRoute();
@@ -400,33 +456,22 @@ namespace TSP
                     worst = cost;
                 }
             }
+            Console.WriteLine(best + " " + worst);
+
+
+            Console.WriteLine("Starting Branch and Bound " + sw.ElapsedMilliseconds);
 
             BBState initialState = CreateInitialState();
+            BBWorker.updateGUI = this.newSolutionCallback;
             BBWorker worker = new BBWorker(initialState, initialState.getCostMatrix(), Cities.Length);
+            best = double.MaxValue;
             worker.setBSSF(best);
+            Program.MainForm.tbInitial.Text = "" + best;
+            Program.MainForm.tbBound.Text = "" + initialState.bound;
+
             //worker.run();
             Thread nThread = new Thread(new ThreadStart(worker.run));
             nThread.Start();
-            while  (BBWorker.workerCount > 0)
-            {
-                Thread.Sleep(1000);
-            }
-            BBState BSSFState = worker.GetBSSFState();
-            bssf = new TSPSolution(BSSFState.getRoute(this.GetCities()));
-            if (bssf.Route.Count != Cities.Length)
-            {
-                throw new Exception();
-            }
-            sw.Stop();
-            Console.WriteLine(sw.ElapsedMilliseconds);
-
-            Console.WriteLine(best + " " + worst);
-
-            // update the cost of the tour. 
-            Program.MainForm.tbCostOfTour.Text = " " + bssf.costOfRoute();
-            Program.MainForm.tbElapsedTime.Text = " " + sw.Elapsed;
-            // do a refresh. 
-            Program.MainForm.Invalidate();
         }
         #endregion
     }
