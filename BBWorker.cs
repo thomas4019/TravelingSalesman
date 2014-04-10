@@ -8,17 +8,20 @@ namespace TSP
 {
     class BBWorker
     {
+        private static int MaxAgendaCount = 200000;
         C5.IntervalHeap<BBState> Agenda;
         double initial_bound;
-        double BSSF_cost;
-        BBState BSSF;
+        static double BSSF_cost;
+        double[,] trueCosts;
+        static BBState BSSF;
         int numPoints;
         bool timeAvailable;
 
-        public BBWorker(BBState initial, int numPoints)
+        public BBWorker(BBState initial, double[,] trueCosts, int numPoints)
         {
             Agenda = new C5.IntervalHeap<BBState>();
             BSSF_cost = double.PositiveInfinity;
+            this.trueCosts = trueCosts;
 
             initial_bound = initial.bound;
             this.numPoints = numPoints;
@@ -29,7 +32,11 @@ namespace TSP
         public void run()
         {
             while(!Agenda.IsEmpty && timeAvailable && BSSF_cost != initial_bound) {
+
                 BBState u = Agenda.DeleteMin();
+                //Console.WriteLine(u.bound);
+                if (u.bound > BSSF_cost)
+                    continue;
 
                 int x,y;
                 if ( u.chooseNextEdge(out x, out y) )
@@ -56,11 +63,12 @@ namespace TSP
 
         public void setBSSF(double BSSF_cost)
         {
-            this.BSSF_cost = BSSF_cost;
+            BBWorker.BSSF_cost = BSSF_cost;
         }
 
         private void expand(BBState w) {
-            if (w.bound < BSSF_cost) // See if bound is within cost
+
+            if (w.bound < BSSF_cost || BSSF == null) // See if bound is within cost
             {
                 if(criterion(w)) { // If full solution
                     BSSF = w;
@@ -88,7 +96,7 @@ namespace TSP
 
     class BBState : IComparable
     {
-        private static double lambda = .05;
+        private static double lambda = .0005;
 
         private double[,] cost;
 
@@ -184,6 +192,7 @@ namespace TSP
             {
                 throw new Exception();
             }
+            bound += cost[x, y];
             for (int i = 0; i < numPoints; i++)
             {
                 cost[i, y] = double.PositiveInfinity;
@@ -221,6 +230,11 @@ namespace TSP
             }
 
             return cityList;
+        }
+
+        public double[,] getCostMatrix()
+        {
+            return cost;
         }
 
         /// <summary>

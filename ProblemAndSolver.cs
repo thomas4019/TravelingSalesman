@@ -396,7 +396,8 @@ namespace TSP
                 }
             }
 
-            BBWorker worker = new BBWorker(CreateInitialState(), Cities.Length);
+            BBState initialState = CreateInitialState();
+            BBWorker worker = new BBWorker(initialState, initialState.getCostMatrix(), Cities.Length);
             worker.setBSSF(best);
             worker.run();
             BBState BSSFState = worker.GetBSSFState();
