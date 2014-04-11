@@ -12,6 +12,8 @@ namespace TSP
     class ProblemAndSolver
     {
         public static Boolean LiveUpdating = true;
+        private static double BBTime = 59000;
+        private static double twoChangeInterval = 1000;
 
         public class TSPSolution
         {
@@ -300,15 +302,40 @@ namespace TSP
             return s;
         }
 
+        private TSPSolution TwoChangeOnInterval(BBState state, double interval)
+        {
+            bool done = false;
+
+            System.Timers.Timer timer = new System.Timers.Timer(interval);
+            timer.Elapsed += new ElapsedEventHandler(delegate(Object source, ElapsedEventArgs e)
+            {
+                done = true;
+                timer.Enabled = false;
+            });
+
+            timer.Enabled = true;
+            TSPSolution s = TwoChange(state);
+            while (!done)
+            {
+                s = TwoChange(s.Route);
+            }
+            return s;
+        }
+
         /// <summary>s
         /// Runs TwoChange on a random route
         /// </summary>
         /// <returns>The best solution for choose 2</returns>
-        private TSPSolution TwoChange()
+        private TSPSolution TwoChange(BBState state)
         {
-            TSPSolution s = random();
+            ArrayList Route = state.getRoute(GetCities());
+            return this.TwoChange(Route);
+        }
+
+        private TSPSolution TwoChange(ArrayList Route)
+        {
+            TSPSolution s = new TSPSolution(Route);
             double cost = s.costOfRoute();
-            ArrayList Route = s.Route;
 
             for (int first = 0; first < Route.Count - 1; ++first)
             {
@@ -384,9 +411,9 @@ namespace TSP
         }
 
         public void newSolutionCallback(bool done)
-        {
+       { 
             if (LiveUpdating || done)
-                updateHUD();
+                updateHUD(done);
             if (done)
             {
                 UpdateAction doneHandler = showDone;
@@ -394,10 +421,18 @@ namespace TSP
             }
         }
 
-        public void updateHUD()
+        public void updateHUD(bool done)
         {
             BBState BSSFState = BBWorker.BSSF;
-            bssf = new TSPSolution(BSSFState.getRoute(GetCities()));
+            bssf = null;
+            if (done)
+            {
+                bssf = TwoChangeOnInterval(BSSFState, twoChangeInterval);
+            }
+            else
+            {
+                bssf = new TSPSolution(BSSFState.getRoute(GetCities()));
+            }
             if (bssf.Route.Count != Cities.Length)
             {
                 throw new Exception();
@@ -435,36 +470,18 @@ namespace TSP
             double best = double.MaxValue;
             double worst = 0;
 
-            System.Timers.Timer timer = new System.Timers.Timer(60000);
+            System.Timers.Timer timer = new System.Timers.Timer();
+            timer.Interval = BBTime;
             timer.AutoReset = false;
             timer.Elapsed += new System.Timers.ElapsedEventHandler(this.onTimedEvent);
             timer.Enabled = true;
-
-            sw.Reset();
-            sw.Start();
-            for (int i = 0; i < 100; i++)
-            {
-                TSPSolution current = TwoChange();
-                double cost = current.costOfRoute();
-                if (cost < best)
-                {
-                    bssf = current;
-                    best = cost;
-                }
-                else if (cost > worst)
-                {
-                    worst = cost;
-                }
-            }
-            Console.WriteLine(best + " " + worst);
-
 
             Console.WriteLine("Starting Branch and Bound " + sw.ElapsedMilliseconds);
 
             BBState initialState = CreateInitialState();
             BBWorker.updateGUI = this.newSolutionCallback;
             BBWorker worker = new BBWorker(initialState, initialState.getCostMatrix(), Cities.Length);
-            best = double.MaxValue;
+            //best = double.MaxValue;
             worker.setBSSF(best);
             Program.MainForm.tbInitial.Text = "" + best;
             Program.MainForm.tbBound.Text = "" + initialState.bound;
