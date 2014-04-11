@@ -322,7 +322,7 @@ namespace TSP
             return s;
         }
 
-        private TSPSolution TwoChangeOnInterval(BBState state, double interval)
+        private TSPSolution ThreeChangeOnInterval(BBState state, double interval)
         {
             bool done = false;
 
@@ -334,11 +334,11 @@ namespace TSP
             });
 
             timer.Enabled = true;
-            TSPSolution s = TwoChange(state);
+            TSPSolution s = ThreeChange(state);
             Console.WriteLine(s.costOfRoute());
             while (!done)
             {
-                s = TwoChange(ref s);
+                s = ThreeChange(ref s);
                 Console.WriteLine(s.costOfRoute());
             }
             return s;
@@ -385,6 +385,13 @@ namespace TSP
             return s;
         }
 
+        private TSPSolution ThreeChange(BBState state)
+        {
+            ArrayList Route = state.getRoute(GetCities());
+            TSPSolution s = new TSPSolution(Route);
+            return this.ThreeChange(ref s);
+        }
+
         private TSPSolution ThreeChange(ref TSPSolution s)
         {
             double cost = s.costOfRoute();
@@ -399,9 +406,11 @@ namespace TSP
                         City firstCity = route[first] as City;
                         City middleCity = route[middle] as City;
                         City lastCity = route[last] as City;
+                        City tempCity = null;
 
-                        double newCost;
+                        double newCost = 0;
 
+                        // MIDDLE LAST
                         route[first] = firstCity;
                         route[middle] = lastCity;
                         route[last] = middleCity;
@@ -409,6 +418,9 @@ namespace TSP
                         if (newCost < cost)
                         {
                             cost = newCost;
+                            tempCity = middleCity;
+                            middleCity = lastCity;
+                            lastCity = tempCity;
                         }
                         else
                         {
@@ -417,6 +429,7 @@ namespace TSP
                             route[last] = lastCity;
                         }
 
+                        // FIRST MIDDLE
                         route[first] = middleCity;
                         route[middle] = firstCity;
                         route[last] = lastCity;
@@ -424,6 +437,9 @@ namespace TSP
                         if (newCost < cost)
                         {
                             cost = newCost;
+                            tempCity = firstCity;
+                            firstCity = middleCity;
+                            middleCity = tempCity;
                         }
                         else
                         {
@@ -432,36 +448,7 @@ namespace TSP
                             route[last] = lastCity;
                         }
 
-                        route[first] = middleCity;
-                        route[middle] = lastCity;
-                        route[last] = middleCity;
-                        newCost = s.costOfRoute();
-                        if (newCost < cost)
-                        {
-                            cost = newCost;
-                        }
-                        else
-                        {
-                            route[first] = firstCity;
-                            route[middle] = middleCity;
-                            route[last] = lastCity;
-                        }
-
-                        route[first] = lastCity;
-                        route[middle] = firstCity;
-                        route[last] = middleCity;
-                        newCost = s.costOfRoute();
-                        if (newCost < cost)
-                        {
-                            cost = newCost;
-                        }
-                        else
-                        {
-                            route[first] = firstCity;
-                            route[middle] = middleCity;
-                            route[last] = lastCity;
-                        }
-
+                        // FIRST LAST
                         route[first] = lastCity;
                         route[middle] = middleCity;
                         route[last] = firstCity;
@@ -469,6 +456,9 @@ namespace TSP
                         if (newCost < cost)
                         {
                             cost = newCost;
+                            tempCity = firstCity;
+                            firstCity = lastCity;
+                            lastCity = tempCity;
                         }
                         else
                         {
@@ -476,10 +466,54 @@ namespace TSP
                             route[middle] = middleCity;
                             route[last] = lastCity;
                         }
+
+                        // SHIFT LEFT
+                        route[first] = middleCity;
+                        route[middle] = lastCity;
+                        route[last] = firstCity;
+                        newCost = s.costOfRoute();
+                        if (newCost < cost)
+                        {
+                            cost = newCost;
+                            tempCity = firstCity;
+                            firstCity = middleCity;
+                            middleCity = lastCity;
+                            lastCity = tempCity;
+                        }
+                        else
+                        {
+                            route[first] = firstCity;
+                            route[middle] = middleCity;
+                            route[last] = lastCity;
+                        }
+
+                        // SHIFT RIGHT
+                        route[first] = lastCity;
+                        route[middle] = firstCity;
+                        route[last] = middleCity;
+                        newCost = s.costOfRoute();
+                        if (newCost < cost)
+                        {
+                            cost = newCost;
+                            tempCity = lastCity;
+                            lastCity = middleCity;
+                            middleCity = firstCity;
+                            firstCity = tempCity;
+                        }
+                        else
+                        {
+                            route[first] = firstCity;
+                            route[middle] = middleCity;
+                            route[last] = lastCity;
+                        }
+
+                        
                     }
                 }
             }
 
+            Console.WriteLine("ThreeChange: New Cost " + cost);
+            Console.WriteLine("ThreeChange: New s " + s.costOfRoute());
             return s;
         }
 
@@ -533,9 +567,9 @@ namespace TSP
 
         public void newSolutionCallback(bool done)
        {
-            bssf = TwoChange(BBWorker.BSSF);
-            //BBWorker.BSSF = bssf.toBBState();
-            BBWorker.setBSSF(bssf.costOfRoute());
+            //bssf = TwoChange(BBWorker.BSSF);
+            ////BBWorker.BSSF = bssf.toBBState();
+            //BBWorker.setBSSF(bssf.costOfRoute());
             if (LiveUpdating || done)
                 updateHUD(done);
             if (done)
@@ -550,8 +584,8 @@ namespace TSP
             BBState BSSFState = BBWorker.BSSF;
             if (done)
             {
-                bssf = TwoChangeOnInterval(BSSFState, twoChangeInterval);
-                bssf = ThreeChange(ref bssf);
+                bssf = ThreeChangeOnInterval(BSSFState, twoChangeInterval);
+                //bssf = ThreeChange(ref bssf);
             }
             else
             {
