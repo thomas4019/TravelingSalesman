@@ -10,7 +10,7 @@ namespace TSP
 {
     class BBWorker
     {
-        public static int MaxWorkerCount = 4;
+        public static int MaxWorkerCount = 8;
         public static int MinAgendaSplitSize = 50;
 
         public static int workerCount = 0;
@@ -124,7 +124,7 @@ namespace TSP
             return BSSF;
         }
 
-        public void setBSSF(double BSSF_cost)
+        public static void setBSSF(double BSSF_cost)
         {
             BBWorker.BSSF_cost = BSSF_cost;
         }
