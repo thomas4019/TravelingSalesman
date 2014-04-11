@@ -469,6 +469,9 @@ namespace TSP
             TSPSolution s = new TSPSolution(Route);
             bssf = s;*/
 
+            sw.Reset();
+            sw.Start();
+
             double best = double.MaxValue;
             double worst = 0;
 
