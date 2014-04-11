@@ -315,9 +315,10 @@ namespace TSP
 
             timer.Enabled = true;
             TSPSolution s = TwoChange(state);
+            Console.WriteLine(s.costOfRoute());
             while (!done)
             {
-                s = TwoChange(s.Route);
+                s = TwoChange(ref s);
             }
             return s;
         }
@@ -329,22 +330,23 @@ namespace TSP
         private TSPSolution TwoChange(BBState state)
         {
             ArrayList Route = state.getRoute(GetCities());
-            return this.TwoChange(Route);
+            TSPSolution s = new TSPSolution(Route);
+            return this.TwoChange(ref s);
         }
 
-        private TSPSolution TwoChange(ArrayList Route)
+        private TSPSolution TwoChange(ref TSPSolution s)
         {
-            TSPSolution s = new TSPSolution(Route);
             double cost = s.costOfRoute();
+            ArrayList route = s.Route;
 
-            for (int first = 0; first < Route.Count - 1; ++first)
+            for (int first = 0; first < route.Count - 1; ++first)
             {
-                for (int last = first + 1; last < Route.Count; ++last)
+                for (int last = first + 1; last < route.Count; ++last)
                 {
-                    City firstCity = Route[first] as City;
-                    City lastCity = Route[last] as City;
-                    Route[first] = lastCity;
-                    Route[last] = firstCity;
+                    City firstCity = route[first] as City;
+                    City lastCity = route[last] as City;
+                    route[first] = lastCity;
+                    route[last] = firstCity;
 
                     double newCost = s.costOfRoute();
                     if (newCost < cost)
@@ -353,8 +355,8 @@ namespace TSP
                     }
                     else
                     {
-                        Route[first] = firstCity;
-                        Route[last] = lastCity;
+                        route[first] = firstCity;
+                        route[last] = lastCity;
                     }
                 }
             }
