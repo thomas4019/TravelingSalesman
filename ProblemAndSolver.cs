@@ -322,7 +322,7 @@ namespace TSP
             return s;
         }
 
-        private TSPSolution ThreeChangeOnInterval(BBState state, double interval)
+        private TSPSolution TwoChangeOnInterval(BBState state, double interval)
         {
             bool done = false;
 
@@ -338,7 +338,7 @@ namespace TSP
             Console.WriteLine(s.costOfRoute());
             while (!done)
             {
-                s = ThreeChange(ref s);
+                s = TwoChange(ref s);
                 Console.WriteLine(s.costOfRoute());
             }
             return s;
@@ -513,7 +513,6 @@ namespace TSP
             }
 
             Console.WriteLine("ThreeChange: New Cost " + cost);
-            Console.WriteLine("ThreeChange: New s " + s.costOfRoute());
             return s;
         }
 
@@ -584,7 +583,7 @@ namespace TSP
             BBState BSSFState = BBWorker.BSSF;
             if (done)
             {
-                bssf = ThreeChangeOnInterval(BSSFState, twoChangeInterval);
+                bssf = TwoChangeOnInterval(BSSFState, twoChangeInterval);
                 //bssf = ThreeChange(ref bssf);
             }
             else
