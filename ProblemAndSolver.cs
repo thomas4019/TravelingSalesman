@@ -364,6 +364,104 @@ namespace TSP
             return s;
         }
 
+        private TSPSolution ThreeChange(ref TSPSolution s)
+        {
+            double cost = s.costOfRoute();
+            ArrayList route = s.Route;
+
+            for (int first = 0; first < route.Count - 2; ++first)
+            {
+                for (int middle = first + 1; middle < route.Count - 1; ++middle)
+                {
+                    for (int last = middle + 1; last < route.Count; ++last)
+                    {
+                        City firstCity = route[first] as City;
+                        City middleCity = route[middle] as City;
+                        City lastCity = route[last] as City;
+
+                        double newCost;
+
+                        route[first] = firstCity;
+                        route[middle] = lastCity;
+                        route[last] = middleCity;
+                        newCost = s.costOfRoute();
+                        if (newCost < cost)
+                        {
+                            cost = newCost;
+                        }
+                        else
+                        {
+                            route[first] = firstCity;
+                            route[middle] = middleCity;
+                            route[last] = lastCity;
+                        }
+
+                        route[first] = middleCity;
+                        route[middle] = firstCity;
+                        route[last] = lastCity;
+                        newCost = s.costOfRoute();
+                        if (newCost < cost)
+                        {
+                            cost = newCost;
+                        }
+                        else
+                        {
+                            route[first] = firstCity;
+                            route[middle] = middleCity;
+                            route[last] = lastCity;
+                        }
+
+                        route[first] = middleCity;
+                        route[middle] = lastCity;
+                        route[last] = middleCity;
+                        newCost = s.costOfRoute();
+                        if (newCost < cost)
+                        {
+                            cost = newCost;
+                        }
+                        else
+                        {
+                            route[first] = firstCity;
+                            route[middle] = middleCity;
+                            route[last] = lastCity;
+                        }
+
+                        route[first] = lastCity;
+                        route[middle] = firstCity;
+                        route[last] = middleCity;
+                        newCost = s.costOfRoute();
+                        if (newCost < cost)
+                        {
+                            cost = newCost;
+                        }
+                        else
+                        {
+                            route[first] = firstCity;
+                            route[middle] = middleCity;
+                            route[last] = lastCity;
+                        }
+
+                        route[first] = lastCity;
+                        route[middle] = middleCity;
+                        route[last] = firstCity;
+                        newCost = s.costOfRoute();
+                        if (newCost < cost)
+                        {
+                            cost = newCost;
+                        }
+                        else
+                        {
+                            route[first] = firstCity;
+                            route[middle] = middleCity;
+                            route[last] = lastCity;
+                        }
+                    }
+                }
+            }
+
+            return s;
+        }
+
         private ArrayList brute(ArrayList Route)
         {
             for (int x = 0; x < Cities.Length; x++)
@@ -430,6 +528,7 @@ namespace TSP
             if (done)
             {
                 bssf = TwoChangeOnInterval(BSSFState, twoChangeInterval);
+                bssf = ThreeChange(ref bssf);
             }
             else
             {
