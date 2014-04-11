@@ -55,6 +55,26 @@ namespace TSP
                 cost += here.costToGetTo(Route[0] as City);
                 return cost; 
             }
+
+            public BBState toBBState()
+            {
+
+                double[,] costMatrix = new double[Route.Count, Route.Count];
+                for (int x = 0; x < Route.Count; ++x)
+                {
+                    for (int y = 0; y < Route.Count; ++y)
+                    {
+                        costMatrix[x, y] = x == y ? double.PositiveInfinity : ( (City)Route[x] ).costToGetTo( (City)Route[y] );
+                    }
+                }
+                BBState newState = new BBState(costMatrix);
+                newState.bound = this.costOfRoute();
+                newState.depth = Route.Count;
+                newState.excludeCount = 0;
+                newState.numPoints = Route.Count;
+
+                return newState;
+            }
         }
         
         #region private members
@@ -319,6 +339,7 @@ namespace TSP
             while (!done)
             {
                 s = TwoChange(ref s);
+                Console.WriteLine(s.costOfRoute());
             }
             return s;
         }
@@ -360,7 +381,7 @@ namespace TSP
                     }
                 }
             }
-
+            Console.WriteLine("TwoChange: New Cost " + cost);
             return s;
         }
 
@@ -413,7 +434,10 @@ namespace TSP
         }
 
         public void newSolutionCallback(bool done)
-       { 
+       {
+            bssf = TwoChange(BBWorker.BSSF);
+            //BBWorker.BSSF = bssf.toBBState();
+            BBWorker.setBSSF(bssf.costOfRoute());
             if (LiveUpdating || done)
                 updateHUD(done);
             if (done)
@@ -426,7 +450,6 @@ namespace TSP
         public void updateHUD(bool done)
         {
             BBState BSSFState = BBWorker.BSSF;
-            bssf = null;
             if (done)
             {
                 bssf = TwoChangeOnInterval(BSSFState, twoChangeInterval);
@@ -484,7 +507,7 @@ namespace TSP
             BBWorker.updateGUI = this.newSolutionCallback;
             BBWorker worker = new BBWorker(initialState, initialState.getCostMatrix(), Cities.Length);
             //best = double.MaxValue;
-            worker.setBSSF(best);
+            BBWorker.setBSSF(best);
             Program.MainForm.tbInitial.Text = "" + best;
             Program.MainForm.tbBound.Text = "" + initialState.bound;
 
