@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Timers;
+using System.Diagnostics;
 
 namespace TSP
 {
@@ -14,6 +15,7 @@ namespace TSP
         public static int MinAgendaSplitSize = 50;
 
         public static int workerCount = 0;
+        public static long MaxRam = 0;
 
         private static int MaxAgendaCount = 200000;
 
@@ -93,8 +95,13 @@ namespace TSP
 
                     expand(exclude);
                     expand(include);
-                    //expansions++;
-                    Interlocked.Increment(ref expansions);
+                    expansions++;
+
+                    if (expansions % 1000 == 0)
+                    {
+                        Process proc = Process.GetCurrentProcess();
+                        MaxRam = Math.Max(MaxRam, proc.PrivateMemorySize64);
+                    }
                 }
                 else
                 {

@@ -58,6 +58,8 @@ namespace TSP
             this.tbInitial = new System.Windows.Forms.ToolStripTextBox();
             this.toolStripLabel11 = new System.Windows.Forms.ToolStripLabel();
             this.tbBound = new System.Windows.Forms.ToolStripTextBox();
+            this.toolStripLabel12 = new System.Windows.Forms.ToolStripLabel();
+            this.tbRam = new System.Windows.Forms.ToolStripTextBox();
             this.toolStrip1.SuspendLayout();
             this.toolStrip2.SuspendLayout();
             this.SuspendLayout();
@@ -212,7 +214,9 @@ namespace TSP
             this.toolStripLabel10,
             this.tbInitial,
             this.toolStripLabel11,
-            this.tbBound});
+            this.tbBound,
+            this.toolStripLabel12,
+            this.tbRam});
             this.toolStrip2.Location = new System.Drawing.Point(0, 0);
             this.toolStrip2.Name = "toolStrip2";
             this.toolStrip2.Size = new System.Drawing.Size(959, 25);
@@ -284,6 +288,18 @@ namespace TSP
             this.tbBound.ReadOnly = true;
             this.tbBound.Size = new System.Drawing.Size(100, 25);
             // 
+            // toolStripLabel12
+            // 
+            this.toolStripLabel12.Name = "toolStripLabel12";
+            this.toolStripLabel12.Size = new System.Drawing.Size(29, 22);
+            this.toolStripLabel12.Text = "RAM";
+            // 
+            // tbRam
+            // 
+            this.tbRam.Name = "tbRam";
+            this.tbRam.ReadOnly = true;
+            this.tbRam.Size = new System.Drawing.Size(100, 25);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -336,6 +352,8 @@ namespace TSP
         public System.Windows.Forms.ToolStripTextBox tbInitial;
         private System.Windows.Forms.ToolStripLabel toolStripLabel11;
         public System.Windows.Forms.ToolStripTextBox tbBound;
+        private System.Windows.Forms.ToolStripLabel toolStripLabel12;
+        public System.Windows.Forms.ToolStripTextBox tbRam;
 
 
 

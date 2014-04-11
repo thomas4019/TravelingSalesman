@@ -600,13 +600,14 @@ namespace TSP
 
         public void updateHUDHandler()
         {
-            // update the cost of the tour. 
+            // update the cost of the tour.
             Program.MainForm.tbCostOfTour.Text = " " + bssf.costOfRoute();
             Program.MainForm.tbElapsedTime.Text = " " + sw.Elapsed;
 
             Program.MainForm.tbSearched.Text = "" + BBWorker.expansions;
             Program.MainForm.tbPruned.Text = "" + BBWorker.pruned;
             Program.MainForm.tbMaxAgenda.Text = "" + BBWorker.maxAgenda;
+            Program.MainForm.tbRam.Text = "" + BBWorker.MaxRam / 1e6 + " MB";
 
             // do a refresh. 
             Program.MainForm.Invalidate();
